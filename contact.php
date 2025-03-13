@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Process contact form
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = sanitize_input($_POST['name']);
@@ -38,12 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 </section>
 
+<br>
+<br>
+
 <div class="container">
     <div class="row mb-5">
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h3>Get in Touch</h3>
+            <div class="card mb-4 shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h3 class="mb-4 border-bottom pb-3">Get in Touch</h3>
                     
                     <?php if (isset($error) && !empty($error)): ?>
                         <?php echo display_error($error); ?>
@@ -66,17 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label for="message" class="form-label">Message *</label>
                             <textarea class="form-control" id="message" name="message" rows="5" required><?php echo isset($message) ? $message : ''; ?></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary">Send Message</button>
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Send Message</button>
                     </form>
                 </div>
             </div>
         </div>
         
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h3>Contact Information</h3>
-                    <p>Feel free to reach out to us using any of the following contact methods:</p>
+            <div class="card mb-4 shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h3 class="mb-4 border-bottom pb-3">Contact Information</h3>
+                    <p class="lead mb-4">Feel free to reach out to us using any of the following contact methods:</p>
                     
                     <div class="contact-item mb-4 d-flex align-items-center">
                         <div class="contact-icon">
@@ -84,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="contact-details">
                             <h5>Address</h5>
-                            <p class="mb-0">123 Gulshan Avenue, Dhaka, Bangladesh</p>
+                            <p class="mb-0">Rainkhola, Mirpur 1, Dhaka, Bangladesh</p>
                         </div>
                     </div>
                     
@@ -94,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="contact-details">
                             <h5>Phone</h5>
-                            <p class="mb-0">+880 1234 567890</p>
+                            <p class="mb-0">+880 1939424320</p>
                         </div>
                     </div>
                     
@@ -104,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="contact-details">
                             <h5>Email</h5>
-                            <p class="mb-0">info@tourismmanagement.com</p>
+                            <p class="mb-0">info@trexo.com</p>
                         </div>
                     </div>
                     
@@ -114,13 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <div class="contact-details">
                             <h5>Business Hours</h5>
-                            <p class="mb-0">Monday - Friday: 9:00 AM - 6:00 PM<br>
-                            Saturday: 10:00 AM - 4:00 PM<br>
-                            Sunday: Closed</p>
+                            <p class="mb-0">Saturday - Tuesday: 9:00 AM - 6:00 PM<br>
+                            Wednesday - Thursday: 10:00 AM - 4:00 PM<br>
+                            Friday: Closed</p>
                         </div>
                     </div>
                     
-                    <div class="social-icons mt-4">
+                    <div class="social-icons mt-5 text-center">
+                        <h5 class="mb-3">Connect With Us</h5>
                         <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
                         <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
@@ -134,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Google Map (Dhaka, Bangladesh) -->
     <div class="row mb-5">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-sm border-0">
                 <div class="card-body p-0">
                     <div class="ratio ratio-16x9">
                         <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d233668.38703692693!2d90.27923991057244!3d23.780573258035957!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8b087026b81%3A0x8fa563bbdd5904c2!2sDhaka%2C%20Bangladesh!5e0!3m2!1sen!2sus!4v1646579736822!5m2!1sen!2sus" allowfullscreen="" loading="lazy"></iframe>
@@ -194,11 +198,12 @@ require_once 'includes/footer.php';
     .social-icons {
         display: flex;
         gap: 15px;
+        justify-content: center;
     }
     
     .social-icon {
-        width: 40px;
-        height: 40px;
+        width: 45px;
+        height: 45px;
         background: #f8f9fa;
         border-radius: 50%;
         display: flex;
@@ -208,6 +213,7 @@ require_once 'includes/footer.php';
         text-decoration: none;
         transition: all 0.3s ease;
         border: 1px solid #dee2e6;
+        font-size: 1.2rem;
     }
     
     .social-icon:hover {
@@ -215,5 +221,16 @@ require_once 'includes/footer.php';
         color: white;
         transform: translateY(-5px);
         box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+    }
+    
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    @media (max-width: 767.98px) {
+        .social-icons {
+            margin-top: 2rem;
+        }
     }
 </style> 

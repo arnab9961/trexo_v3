@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Check if user is logged in
 if (!is_logged_in()) {
     $_SESSION['error_message'] = 'Please login to view your profile.';
@@ -92,21 +92,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
 }
 ?>
 
-<div class="container">
-    <h2 class="mb-4">My Profile</h2>
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="section-title">My Profile</h2>
+            <p class="text-muted">Manage your personal information and account settings</p>
+        </div>
+    </div>
     
     <div class="row">
         <div class="col-md-4 mb-4">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h4><?php echo $user['full_name']; ?></h4>
-                    <p class="text-muted">@<?php echo $user['username']; ?></p>
-                    <p><i class="fas fa-envelope me-2"></i><?php echo $user['email']; ?></p>
-                    <?php if (!empty($user['phone'])): ?>
-                        <p><i class="fas fa-phone me-2"></i><?php echo $user['phone']; ?></p>
-                    <?php endif; ?>
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-4">
+                        <div class="profile-avatar mx-auto mb-3">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <h4 class="mb-1"><?php echo $user['full_name']; ?></h4>
+                        <p class="text-muted mb-3">@<?php echo $user['username']; ?></p>
+                    </div>
+                    
+                    <div class="profile-info mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="profile-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="ms-3 text-start">
+                                <p class="mb-0"><?php echo $user['email']; ?></p>
+                            </div>
+                        </div>
+                        
+                        <?php if (!empty($user['phone'])): ?>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="profile-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="ms-3 text-start">
+                                <p class="mb-0"><?php echo $user['phone']; ?></p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($user['address'])): ?>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="profile-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="ms-3 text-start">
+                                <p class="mb-0"><?php echo $user['address']; ?></p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
                     <div class="d-grid gap-2">
-                        <a href="my_bookings.php" class="btn btn-primary">My Bookings</a>
+                        <a href="my_bookings.php" class="btn btn-primary">
+                            <i class="fas fa-suitcase me-2"></i>My Bookings
+                        </a>
                     </div>
                 </div>
             </div>
@@ -114,11 +156,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
         
         <div class="col-md-8">
             <!-- Profile Update Form -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Update Profile</h5>
-                </div>
-                <div class="card-body">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <h3 class="mb-4 border-bottom pb-3">Update Profile</h3>
+                    
                     <?php if (isset($error) && !empty($error)): ?>
                         <?php echo display_error($error); ?>
                     <?php endif; ?>
@@ -145,17 +186,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
                             <label for="address" class="form-label">Address</label>
                             <textarea class="form-control" id="address" name="address" rows="3"><?php echo $user['address']; ?></textarea>
                         </div>
-                        <button type="submit" name="update_profile" class="btn btn-primary">Update Profile</button>
+                        <button type="submit" name="update_profile" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
                     </form>
                 </div>
             </div>
             
             <!-- Change Password Form -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Change Password</h5>
-                </div>
-                <div class="card-body">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h3 class="mb-4 border-bottom pb-3">Change Password</h3>
+                    
                     <?php if (isset($password_error) && !empty($password_error)): ?>
                         <?php echo display_error($password_error); ?>
                     <?php endif; ?>
@@ -174,13 +216,65 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
                             <label for="confirm_password" class="form-label">Confirm New Password *</label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                         </div>
-                        <button type="submit" name="change_password" class="btn btn-primary">Change Password</button>
+                        <button type="submit" name="change_password" class="btn btn-primary">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .section-title {
+        position: relative;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 50px;
+        height: 2px;
+        background-color: var(--primary);
+    }
+    
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        background-color: #f8f9fa;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: var(--primary);
+        border: 3px solid var(--primary);
+    }
+    
+    .profile-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+    }
+    
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
 
 <?php
 require_once 'includes/footer.php';

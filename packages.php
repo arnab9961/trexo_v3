@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Pagination setup
 $limit = 6; // Items per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -34,9 +34,14 @@ $packages_result = mysqli_query($conn, $packages_query);
             if (mysqli_num_rows($packages_result) > 0) {
                 $image_count = 1;
                 while ($package = mysqli_fetch_assoc($packages_result)) {
-                    // Use one of the 6 available images
-                    $image_file = "destination" . $image_count . ".jpg";
-                    $image_count = ($image_count % 6) + 1;
+                    // Use custom image if available, otherwise use default image
+                    if (!empty($package['image'])) {
+                        $image_file = $package['image'];
+                    } else {
+                        // Use one of the 6 available images
+                        $image_file = "destination" . $image_count . ".jpg";
+                        $image_count = ($image_count % 6) + 1;
+                    }
             ?>
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
@@ -49,7 +54,7 @@ $packages_result = mysqli_query($conn, $packages_query);
                             <p class="card-text"><?php echo substr($package['description'], 0, 100) . '...'; ?></p>
                             <p><i class="far fa-clock me-2"></i><?php echo $package['duration']; ?></p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="price-tag">৳<?php echo number_format($package['price']); ?></span>
+                                <span class="price-tag"><?php echo number_format($package['price']); ?></span>
                                 <a href="package_details.php?id=<?php echo $package['id']; ?>" class="btn btn-primary">View Details</a>
                             </div>
                         </div>

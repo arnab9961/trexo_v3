@@ -1,6 +1,10 @@
 <?php
 require_once 'includes/header.php';
+require_once 'includes/navbar.php';
+?>
 
+<div class="container mt-5 mb-5">
+<?php
 // Check if user is already logged in
 if (is_logged_in()) {
     redirect('index.php');
@@ -132,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
 </div>
+</div> <!-- Close container -->
 
 <?php
 require_once 'includes/footer.php';

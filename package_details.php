@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Check if ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     $_SESSION['error_message'] = 'Invalid package ID.';
@@ -24,8 +24,13 @@ if (mysqli_num_rows($package_result) == 0) {
 
 $package = mysqli_fetch_assoc($package_result);
 
-// Determine which image to use (based on ID)
-$image_file = "destination" . (($package_id % 6) + 1) . ".jpg";
+// Use custom image if available, otherwise use default image
+if (!empty($package['image'])) {
+    $image_file = $package['image'];
+} else {
+    // Determine which default image to use (based on ID)
+    $image_file = "destination" . (($package_id % 6) + 1) . ".jpg";
+}
 
 // Get destinations included in this package
 $destinations_query = "SELECT d.* FROM destinations d 
@@ -134,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
                     <h2><?php echo $package['name']; ?></h2>
                     <p><i class="far fa-clock me-2"></i><?php echo $package['duration']; ?></p>
                     <hr>
-                    <h4 class="price-tag mb-3">৳<?php echo number_format($package['price']); ?> <small class="text-muted">per person</small></h4>
+                    <h4 class="price-tag mb-3"><?php echo number_format($package['price']); ?> <small class="text-muted">per person</small></h4>
                     
                     <!-- Booking Form -->
                     <form method="POST" action="">
@@ -152,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
                         </div>
                         <input type="hidden" id="base-price" value="<?php echo $package['price']; ?>">
                         <div class="mb-3">
-                            <p>Total Price: ৳<span id="total-price"><?php echo number_format($package['price']); ?></span></p>
+                            <p>Total Price: <span id="total-price"><?php echo number_format($package['price']); ?></span></p>
                         </div>
                         <div class="d-grid">
                             <button type="submit" name="book_now" class="btn btn-primary">Book Now</button>
@@ -183,9 +188,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
                 if (mysqli_num_rows($destinations_result) > 0) {
                     $dest_count = 1;
                     while ($destination = mysqli_fetch_assoc($destinations_result)) {
-                        // Use one of the 6 available images
-                        $dest_image = "destination" . $dest_count . ".jpg";
-                        $dest_count = ($dest_count % 6) + 1;
+                        // Use custom image if available, otherwise use default image
+                        if (!empty($destination['image'])) {
+                            $dest_image = $destination['image'];
+                        } else {
+                            // Use one of the 6 available images
+                            $dest_image = "destination" . $dest_count . ".jpg";
+                            $dest_count = ($dest_count % 6) + 1;
+                        }
                 ?>
                     <div class="col-md-4 mb-3">
                         <div class="card">

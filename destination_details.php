@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Check if ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     $_SESSION['error_message'] = 'Invalid destination ID.';
@@ -24,8 +24,13 @@ if (mysqli_num_rows($destination_result) == 0) {
 
 $destination = mysqli_fetch_assoc($destination_result);
 
-// Determine which image to use (based on ID)
-$image_file = "destination" . (($destination_id % 6) + 1) . ".jpg";
+// Use custom image if available, otherwise use default image
+if (!empty($destination['image'])) {
+    $image_file = $destination['image'];
+} else {
+    // Determine which default image to use (based on ID)
+    $image_file = "destination" . (($destination_id % 6) + 1) . ".jpg";
+}
 
 // Get reviews for this destination
 $reviews_query = "SELECT r.*, u.username, u.full_name FROM reviews r 
@@ -125,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
                     <h2><?php echo $destination['name']; ?></h2>
                     <p><i class="fas fa-map-marker-alt me-2"></i><?php echo $destination['location']; ?></p>
                     <hr>
-                    <h4 class="price-tag mb-3">৳<?php echo number_format($destination['price']); ?> <small class="text-muted">per person</small></h4>
+                    <h4 class="price-tag mb-3"><?php echo number_format($destination['price']); ?> <small class="text-muted">per person</small></h4>
                     
                     <!-- Booking Form -->
                     <form method="POST" action="">
@@ -143,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
                         </div>
                         <input type="hidden" id="base-price" value="<?php echo $destination['price']; ?>">
                         <div class="mb-3">
-                            <p>Total Price: ৳<span id="total-price"><?php echo number_format($destination['price']); ?></span></p>
+                            <p>Total Price: <span id="total-price"><?php echo number_format($destination['price']); ?></span></p>
                         </div>
                         <div class="d-grid">
                             <button type="submit" name="book_now" class="btn btn-primary">Book Now</button>

@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/header.php';
-
+require_once 'includes/navbar.php';
 // Pagination setup
 $limit = 6; // Items per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -34,9 +34,14 @@ $destinations_result = mysqli_query($conn, $destinations_query);
             if (mysqli_num_rows($destinations_result) > 0) {
                 $image_count = 1;
                 while ($destination = mysqli_fetch_assoc($destinations_result)) {
-                    // Use one of the 6 available images
-                    $image_file = "destination" . $image_count . ".jpg";
-                    $image_count = ($image_count % 6) + 1;
+                    // Use custom image if available, otherwise use default image
+                    if (!empty($destination['image'])) {
+                        $image_file = $destination['image'];
+                    } else {
+                        // Use one of the 6 available images
+                        $image_file = "destination" . $image_count . ".jpg";
+                        $image_count = ($image_count % 6) + 1;
+                    }
             ?>
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
@@ -49,7 +54,7 @@ $destinations_result = mysqli_query($conn, $destinations_query);
                             <p class="card-text"><?php echo substr($destination['description'], 0, 100) . '...'; ?></p>
                             <p><i class="fas fa-map-marker-alt me-2"></i><?php echo $destination['location']; ?></p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="price-tag">৳<?php echo number_format($destination['price']); ?></span>
+                                <span class="price-tag"><?php echo number_format($destination['price']); ?></span>
                                 <a href="destination_details.php?id=<?php echo $destination['id']; ?>" class="btn btn-primary">View Details</a>
                             </div>
                         </div>
