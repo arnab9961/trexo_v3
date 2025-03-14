@@ -69,11 +69,15 @@ $bookings_result = mysqli_stmt_get_result($stmt);
                     <div class="card booking-details">
                         <?php if ($booking['destination_id'] && $booking['destination_image']): ?>
                             <div class="booking-image-container">
-                                <img src="images/destinations/<?php echo $booking['destination_image']; ?>" class="booking-image" alt="<?php echo $booking['destination_name']; ?>">
+                                <img src="images/<?php echo $booking['destination_image']; ?>" class="booking-image" alt="<?php echo $booking['destination_name']; ?>">
                             </div>
-                        <?php elseif ($booking['package_id'] && $booking['package_image'] && $booking['package_name'] !== 'Family Adventure'): ?>
+                        <?php elseif ($booking['package_id'] && $booking['package_image']): ?>
                             <div class="booking-image-container">
-                                <img src="images/packages/<?php echo $booking['package_image']; ?>" class="booking-image" alt="<?php echo $booking['package_name']; ?>">
+                                <img src="images/<?php echo $booking['package_image']; ?>" class="booking-image" alt="<?php echo $booking['package_name']; ?>">
+                            </div>
+                        <?php else: ?>
+                            <div class="booking-image-container">
+                                <img src="images/placeholder.jpg" class="booking-image" alt="Booking Image">
                             </div>
                         <?php endif; ?>
                         <div class="card-body d-flex flex-column">

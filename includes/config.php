@@ -31,8 +31,15 @@ function sanitize_input($data) {
 
 // Function to redirect
 function redirect($url) {
-    header("Location: $url");
-    exit();
+    // Check if headers have already been sent
+    if (!headers_sent()) {
+        header("Location: $url");
+        exit();
+    } else {
+        echo '<script>window.location.href="' . $url . '";</script>';
+        echo '<noscript><meta http-equiv="refresh" content="0;url=' . $url . '"></noscript>';
+        exit();
+    }
 }
 
 // Function to check if user is logged in
