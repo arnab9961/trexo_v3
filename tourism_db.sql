@@ -82,16 +82,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (destination_id) REFERENCES destinations(id) ON DELETE SET NULL
 );
 
--- Inquiries Table
-CREATE TABLE IF NOT EXISTS inquiries (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    status ENUM('new', 'in_progress', 'resolved') DEFAULT 'new',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Insert Admin User
 INSERT INTO users (username, password, email, full_name, user_type) 

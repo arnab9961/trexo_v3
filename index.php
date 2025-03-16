@@ -126,9 +126,9 @@ $featured_packages_result = mysqli_query($conn, $featured_packages_query);
                             <img src="images/CEO.jpg" class="card-img-top team-img" alt="MD Arif Al amin - CEO">
                         </div>
                         <div class="card-body text-center py-4">
-                            <h4 class="card-title">MD Arif Al amin</h4>
+                            <h4 class="card-title">Md. Arif Shaikh</h4>
                             <p class="text-primary fw-bold">Chief Executive Officer</p>
-                            <p class="card-text"><i class="fas fa-envelope me-2"></i>mdarifalamin3@gmail.com</p>
+                            <p class="card-text"><i class="fas fa-envelope me-2"></i>arifsh932@gmail.com</p>
                         </div>
                     </div>
                 </div>

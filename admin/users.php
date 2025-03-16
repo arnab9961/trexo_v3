@@ -149,12 +149,7 @@ $result = mysqli_stmt_get_result($stmt);
                                 Bookings
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="inquiries.php">
-                                <i class="fas fa-question-circle me-2"></i>
-                                Inquiries
-                            </a>
-                        </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link text-white" href="reviews.php">
                                 <i class="fas fa-star me-2"></i>

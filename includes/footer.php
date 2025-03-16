@@ -1,4 +1,4 @@
-    </div> <!-- End of main container -->
+</div> <!-- End of main container -->
 
     <!-- Scroll to Top Button -->
     <a href="#" class="scroll-to-top">
@@ -12,7 +12,7 @@
                 <div class="row">
                     <div class="col-lg-4 col-md-6 mb-4 mb-md-0 footer-info">
                         <div class="footer-logo mb-3">
-                            <img src="images/logo.png" alt="TREXO Logo" class="img-fluid footer-brand-logo">
+                            <img src="images/logo.png" alt="TREXO Logo" class="img-fluid footer-logo-static">
                         </div>
                         <p>Your perfect travel companion for discovering amazing destinations around the world. We make travel dreams come true with exceptional service and unforgettable experiences.</p>
                         <div class="social-icons">
@@ -146,6 +146,11 @@
 
     .footer-logo {
         margin-bottom: 1.5rem;
+    }
+
+    .footer-logo-static {
+        max-width: 150px;
+        height: auto;
     }
 
     .footer-brand-logo {
@@ -429,4 +434,4 @@
     });
     </script>
 </body>
-</html> 
+</html>

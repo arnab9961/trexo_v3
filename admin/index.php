@@ -71,14 +71,6 @@ $pending_bookings_count = $bookings_data['pending_count'];
 $bookings_growth = $bookings_data['total_count'] > 0 ? 
                    ($bookings_data['new_count'] / $bookings_data['total_count'] * 100) : 0;
 
-$inquiries_query = "SELECT 
-                    (SELECT COUNT(*) FROM inquiries WHERE status = 'new') as new_count,
-                    (SELECT COUNT(*) FROM inquiries) as total_count";
-$inquiries_result = mysqli_query($conn, $inquiries_query);
-$inquiries_data = mysqli_fetch_assoc($inquiries_result);
-$inquiries_count = $inquiries_data['new_count'];
-$total_inquiries = $inquiries_data['total_count'];
-
 // Get recent bookings with more details
 $recent_bookings_query = "SELECT b.*, u.username, u.email,
                          d.name as destination_name, d.price as destination_price,
@@ -109,6 +101,10 @@ $revenue_result = mysqli_query($conn, $revenue_query);
 $revenue_data = mysqli_fetch_assoc($revenue_result);
 $total_revenue = $revenue_data['total_revenue'] ?? 0;
 $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
+
+// Drop inquiries table if exists
+$drop_inquiries_query = "DROP TABLE IF EXISTS inquiries";
+mysqli_query($conn, $drop_inquiries_query);
 
 ?>
 
@@ -160,12 +156,6 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                             <a class="nav-link text-white" href="bookings.php">
                                 <i class="fas fa-calendar-check me-2"></i>
                                 Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="inquiries.php">
-                                <i class="fas fa-question-circle me-2"></i>
-                                Inquiries
                             </a>
                         </li>
                         <li class="nav-item">
@@ -243,11 +233,11 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                     <div class="col-md-3 mb-4">
                         <div class="dashboard-card">
                             <div class="icon">
-                                <i class="fas fa-dollar-sign"></i>
+                                <i class="fas fa-bangladeshi-taka-sign"></i>
                             </div>
-                            <div class="count">$<?php echo number_format($total_revenue); ?></div>
+                            <div class="count">৳ <?php echo number_format($total_revenue); ?></div>
                             <div class="title">Total Revenue</div>
-                            <div class="subtitle">$<?php echo number_format($monthly_revenue); ?> this month</div>
+                            <div class="subtitle">৳ <?php echo number_format($monthly_revenue); ?> this month</div>
                         </div>
                     </div>
                     <div class="col-md-3 mb-4">
@@ -288,17 +278,6 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                             <a href="bookings.php?status=pending" class="btn btn-sm btn-primary mt-3">View Pending</a>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-4">
-                        <div class="dashboard-card">
-                            <div class="icon">
-                                <i class="fas fa-question-circle"></i>
-                            </div>
-                            <div class="count"><?php echo $inquiries_count; ?></div>
-                            <div class="title">New Inquiries</div>
-                            <div class="subtitle">Out of <?php echo $total_inquiries; ?> total</div>
-                            <a href="inquiries.php" class="btn btn-sm btn-primary mt-3">View Inquiries</a>
-                        </div>
-                    </div>
                 </div>
                 
                 <!-- Recent Bookings -->
@@ -337,15 +316,15 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                                                 <?php
                                                 if ($booking['destination_id']) {
                                                     echo $booking['destination_name'] . ' (Destination)<br>';
-                                                    echo '<small class="text-muted">$' . $booking['destination_price'] . '</small>';
+                                                    echo '<small class="text-muted">৳ ' . $booking['destination_price'] . '</small>';
                                                 } else {
                                                     echo $booking['package_name'] . ' (Package)<br>';
-                                                    echo '<small class="text-muted">$' . $booking['package_price'] . '</small>';
+                                                    echo '<small class="text-muted">৳ ' . $booking['package_price'] . '</small>';
                                                 }
                                                 ?>
                                             </td>
                                             <td><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></td>
-                                            <td>$<?php echo number_format($booking['total_price'], 2); ?></td>
+                                            <td>৳ <?php echo number_format($booking['total_price'], 2); ?></td>
                                             <td>
                                                 <form method="post" class="d-inline">
                                                     <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
@@ -397,4 +376,4 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
     });
     </script>
 </body>
-</html> 
+</html>
