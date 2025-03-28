@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 28, 2025 at 07:45 AM
+-- Generation Time: Mar 28, 2025 at 10:47 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -46,11 +46,14 @@ CREATE TABLE `bookings` (
 --
 
 INSERT INTO `bookings` (`id`, `user_id`, `package_id`, `destination_id`, `booking_date`, `travel_date`, `num_travelers`, `total_price`, `status`, `payment_status`, `created_at`) VALUES
-(6, 1, 17, NULL, '2025-03-14', '2025-03-15', 1, 70000.00, 'cancelled', 'completed', '2025-03-13 22:03:19'),
-(7, 1, NULL, 16, '2025-03-14', '2025-03-15', 1, 900.00, 'confirmed', 'pending', '2025-03-13 22:04:57'),
-(8, 1, 16, NULL, '2025-03-14', '2025-03-21', 1, 70000.00, 'confirmed', 'pending', '2025-03-13 22:07:46'),
-(9, 7, NULL, 16, '2025-03-14', '2025-03-21', 1, 900.00, 'pending', 'pending', '2025-03-13 22:09:25'),
-(10, 7, 16, NULL, '2025-03-14', '2025-03-19', 1, 70000.00, 'confirmed', 'completed', '2025-03-14 10:42:31');
+(9, 7, NULL, 16, '2025-03-14', '2025-03-21', 1, 900.00, 'confirmed', 'completed', '2025-03-13 22:09:25'),
+(10, 7, 16, NULL, '2025-03-14', '2025-03-19', 1, 70000.00, 'pending', 'completed', '2025-03-14 10:42:31'),
+(11, 8, 20, NULL, '2025-03-28', '2025-03-31', 1, 70000.00, 'confirmed', 'completed', '2025-03-28 06:51:32'),
+(12, 8, 16, NULL, '2025-03-28', '2025-04-05', 1, 70000.00, 'confirmed', 'completed', '2025-03-28 08:53:18'),
+(13, 8, 16, NULL, '2025-03-28', '2025-03-31', 1, 70000.00, 'cancelled', 'pending', '2025-03-28 09:19:46'),
+(14, 8, 17, NULL, '2025-03-28', '2025-03-31', 1, 70000.00, 'confirmed', 'completed', '2025-03-28 09:21:37'),
+(15, 8, 17, NULL, '2025-03-28', '2025-03-31', 1, 70000.00, 'confirmed', 'completed', '2025-03-28 09:27:15'),
+(16, 8, 18, NULL, '2025-03-28', '2025-04-02', 1, 70000.00, 'confirmed', 'completed', '2025-03-28 09:45:46');
 
 -- --------------------------------------------------------
 
@@ -177,6 +180,36 @@ INSERT INTO `package_images` (`id`, `package_id`, `image_path`, `created_at`) VA
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `payments`
+--
+
+CREATE TABLE `payments` (
+  `id` int(11) NOT NULL,
+  `booking_id` int(11) NOT NULL,
+  `payment_method` varchar(50) NOT NULL,
+  `transaction_id` varchar(100) NOT NULL,
+  `sender_number` varchar(20) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+  `payment_date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payments`
+--
+
+INSERT INTO `payments` (`id`, `booking_id`, `payment_method`, `transaction_id`, `sender_number`, `amount`, `status`, `payment_date`) VALUES
+(1, 11, 'nagad', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 06:57:59'),
+(2, 11, 'bkash', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 06:58:05'),
+(3, 11, 'bkash', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 06:58:51'),
+(4, 12, 'bkash', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 08:53:26'),
+(5, 13, 'bkash', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 09:20:03'),
+(6, 15, 'nagad', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 09:27:25'),
+(7, 16, 'bkash', '23412341234', '1234123412341234', 70000.00, 'pending', '2025-03-28 09:45:55');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `reviews`
 --
 
@@ -221,7 +254,8 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `password`, `email`, `full_name`, `phone`, `address`, `user_type`, `created_at`) VALUES
 (1, 'admin', '$2y$10$3UB.HqijNFnqyX9ieEg4BOzhp4geN82NJV9K7uNO6TKl4uBmciLBq', 'admin@tourism.com', 'Admin User', NULL, NULL, 'admin', '2025-03-13 18:33:18'),
-(7, 'arnab9961', '$2y$10$OsRhGPCJ.8BAbYiRnH6dou828aVDRt6YpLP.36.dHvkoiGkiAKy6u', 'dmrafiun@gmail.com', 'D.M. Rafiun Bin Bin Masud', '+8801670373934', '1383|8|15|3rnSabuj ban nur tower,notunbagh,khilgaon', 'customer', '2025-03-13 18:51:52');
+(7, 'arnab9961', '$2y$10$OsRhGPCJ.8BAbYiRnH6dou828aVDRt6YpLP.36.dHvkoiGkiAKy6u', 'dmrafiun@gmail.com', 'D.M. Rafiun Bin Bin Masud', '+8801670373934', '1383|8|15|3rnSabuj ban nur tower,notunbagh,khilgaon', 'customer', '2025-03-13 18:51:52'),
+(8, 'mehrab', '$2y$10$.p6kRkwMFAu86doRPVWHt.UKrOyBNumRpmv5NuoRo5js2Wxwc21t6', 'arnab.ali76@gmail.com', 'D.M. Rafiun', '01670373934', '', 'customer', '2025-03-28 06:51:00');
 
 --
 -- Indexes for dumped tables
@@ -271,6 +305,13 @@ ALTER TABLE `package_images`
   ADD KEY `package_id` (`package_id`);
 
 --
+-- Indexes for table `payments`
+--
+ALTER TABLE `payments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `booking_id` (`booking_id`);
+
+--
 -- Indexes for table `reviews`
 --
 ALTER TABLE `reviews`
@@ -295,7 +336,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `destinations`
@@ -328,6 +369,12 @@ ALTER TABLE `package_images`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `payments`
+--
+ALTER TABLE `payments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
@@ -337,7 +384,7 @@ ALTER TABLE `reviews`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables
@@ -369,6 +416,12 @@ ALTER TABLE `package_destinations`
 --
 ALTER TABLE `package_images`
   ADD CONSTRAINT `package_images_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `packages` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `payments`
+--
+ALTER TABLE `payments`
+  ADD CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `reviews`

@@ -40,15 +40,7 @@
                     </div>
                 </div>
             </div>
-            <div class="alert alert-info mt-2">
-                <h6 class="mb-2">Payment Instructions:</h6>
-                <ol class="mb-0">
-                    <li>Send the exact amount to either bKash or Nagad number</li>
-                    <li>Use the reference number (TREX<?php echo $booking['id']; ?>) in the payment note</li>
-                    <li>After sending money, click "Pay Now" and enter your transaction details</li>
-                    <li>We will verify your payment and update the booking status</li>
-                </ol>
-            </div>
+           
         </div>
         <a href="payment.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-success">
             <i class="fas fa-money-bill-wave"></i> Pay Now

@@ -63,7 +63,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $items_per_page = 10;
 $offset = ($page - 1) * $items_per_page;
 
-$where_clause = $search ? "WHERE b.id LIKE '%$search%' OR u.username LIKE '%$search%' OR u.full_name LIKE '%$search%'" : "";
+$where_clause = $search ? "WHERE b.id LIKE '%$search%' OR u.username LIKE '%$search%' OR u.full_name LIKE '%$search%' OR u.email LIKE '%$search%' OR u.phone LIKE '%$search%'" : "";
 $count_query = "SELECT COUNT(*) as total FROM bookings b 
                 JOIN users u ON b.user_id = u.id 
                 $where_clause";
@@ -71,14 +71,24 @@ $count_result = mysqli_query($conn, $count_query);
 $total_items = mysqli_fetch_assoc($count_result)['total'];
 $total_pages = ceil($total_items / $items_per_page);
 
-$query = "SELECT b.*, u.username, u.full_name, u.email, u.phone,
-          p.name as package_name, d.name as destination_name
+$query = "SELECT b.*, u.username, u.full_name, u.email, u.phone, u.address, u.created_at as user_created_at,
+          p.name as package_name, p.price as package_price,
+          d.name as destination_name, d.price as destination_price,
+          py.payment_method, py.transaction_id, py.sender_number, py.payment_date
           FROM bookings b 
           JOIN users u ON b.user_id = u.id
           LEFT JOIN packages p ON b.package_id = p.id
           LEFT JOIN destinations d ON b.destination_id = d.id
+          LEFT JOIN (
+              SELECT * FROM payments 
+              WHERE id IN (
+                  SELECT MAX(id) 
+                  FROM payments 
+                  GROUP BY booking_id
+              )
+          ) py ON b.id = py.booking_id
           $where_clause
-          ORDER BY b.created_at DESC 
+          ORDER BY b.booking_date DESC 
           LIMIT ? OFFSET ?";
 $stmt = mysqli_prepare($conn, $query);
 mysqli_stmt_bind_param($stmt, "ii", $items_per_page, $offset);
@@ -147,14 +157,11 @@ $result = mysqli_stmt_get_result($stmt);
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Customer</th>
+                                        <th>Customer Details</th>
                                         <th>Package/Destination</th>
-                                        <th>Travel Date</th>
-                                        <th>Travelers</th>
-                                        <th>Total Price</th>
+                                        <th>Travel Info</th>
+                                        <th>Payment Details</th>
                                         <th>Status</th>
-                                        <th>Payment</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -162,35 +169,38 @@ $result = mysqli_stmt_get_result($stmt);
                                     <tr>
                                         <td><?php echo $booking['id']; ?></td>
                                         <td>
-                                            <strong><?php echo htmlspecialchars($booking['full_name']); ?></strong><br>
-                                            <small><?php echo htmlspecialchars($booking['email']); ?></small><br>
-                                            <small><?php echo htmlspecialchars($booking['phone']); ?></small>
+                                            <strong class="d-block"><?php echo htmlspecialchars($booking['full_name']); ?></strong>
+                                            <small class="d-block"><i class="fas fa-user me-1"></i> <?php echo htmlspecialchars($booking['username']); ?></small>
+                                            <small class="d-block"><i class="fas fa-envelope me-1"></i> <?php echo htmlspecialchars($booking['email']); ?></small>
+                                            <small class="d-block"><i class="fas fa-phone me-1"></i> <?php echo htmlspecialchars($booking['phone']); ?></small>
+                                            <?php if ($booking['address']): ?>
+                                            <small class="d-block"><i class="fas fa-map-marker-alt me-1"></i> <?php echo htmlspecialchars($booking['address']); ?></small>
+                                            <?php endif; ?>
+                                            <small class="d-block text-muted"><i class="fas fa-clock me-1"></i> Member since: <?php echo date('M d, Y', strtotime($booking['user_created_at'])); ?></small>
                                         </td>
                                         <td>
-                                            <?php
-                                            if ($booking['package_id']) {
-                                                echo htmlspecialchars($booking['package_name']);
-                                            } else {
-                                                echo htmlspecialchars($booking['destination_name']);
-                                            }
-                                            ?>
-                                        </td>
-                                        <td><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></td>
-                                        <td><?php echo $booking['num_travelers']; ?></td>
-                                        <td><?php echo number_format($booking['total_price'], 2); ?></td>
-                                        <td>
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="action" value="update_status">
-                                                <input type="hidden" name="id" value="<?php echo $booking['id']; ?>">
-                                                <select name="status" class="form-select form-select-sm status-select" onchange="this.form.submit()">
-                                                    <option value="pending" <?php echo $booking['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                                    <option value="confirmed" <?php echo $booking['status'] == 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
-                                                    <option value="cancelled" <?php echo $booking['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
-                                                </select>
-                                            </form>
+                                            <?php if ($booking['package_id']): ?>
+                                                <strong class="d-block"><?php echo htmlspecialchars($booking['package_name']); ?> (Package)</strong>
+                                                <small class="d-block text-muted">Base Price: ৳<?php echo number_format($booking['package_price'], 2); ?></small>
+                                            <?php else: ?>
+                                                <strong class="d-block"><?php echo htmlspecialchars($booking['destination_name']); ?> (Destination)</strong>
+                                                <small class="d-block text-muted">Base Price: ৳<?php echo number_format($booking['destination_price'], 2); ?></small>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            <form method="POST" class="d-inline">
+                                            <small class="d-block"><i class="fas fa-calendar me-1"></i> Travel: <?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></small>
+                                            <small class="d-block"><i class="fas fa-users me-1"></i> Travelers: <?php echo $booking['num_travelers']; ?></small>
+                                            <small class="d-block"><i class="fas fa-calendar-plus me-1"></i> Booked: <?php echo date('M d, Y', strtotime($booking['booking_date'])); ?></small>
+                                        </td>
+                                        <td>
+                                            <strong class="d-block">৳<?php echo number_format($booking['total_price'], 2); ?></strong>
+                                            <?php if ($booking['payment_method']): ?>
+                                            <small class="d-block"><i class="fas fa-money-bill me-1"></i> <?php echo ucfirst($booking['payment_method']); ?></small>
+                                            <small class="d-block"><i class="fas fa-receipt me-1"></i> TxID: <?php echo $booking['transaction_id']; ?></small>
+                                            <small class="d-block"><i class="fas fa-phone me-1"></i> From: <?php echo $booking['sender_number']; ?></small>
+                                            <small class="d-block"><i class="fas fa-clock me-1"></i> <?php echo date('M d, Y g:i A', strtotime($booking['payment_date'])); ?></small>
+                                            <?php endif; ?>
+                                            <form method="POST" class="mt-2">
                                                 <input type="hidden" name="action" value="update_payment">
                                                 <input type="hidden" name="id" value="<?php echo $booking['id']; ?>">
                                                 <select name="payment_status" class="form-select form-select-sm payment-select" onchange="this.form.submit()">
@@ -200,13 +210,15 @@ $result = mysqli_stmt_get_result($stmt);
                                             </form>
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-danger delete-booking"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#deleteBookingModal"
-                                                    data-id="<?php echo $booking['id']; ?>"
-                                                    data-name="<?php echo htmlspecialchars($booking['full_name']); ?>">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <form method="POST" action="update_booking_status.php">
+                                                <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                <select name="new_status" class="form-select form-select-sm status-select mb-2" onchange="this.form.submit()">
+                                                    <option value="pending" <?php echo $booking['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                                    <option value="confirmed" <?php echo $booking['status'] == 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
+                                                    <option value="completed" <?php echo $booking['status'] == 'completed' ? 'selected' : ''; ?>>Completed</option>
+                                                    <option value="cancelled" <?php echo $booking['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
+                                                </select>
+                                            </form>
                                         </td>
                                     </tr>
                                     <?php endwhile; ?>
@@ -305,4 +317,4 @@ $result = mysqli_stmt_get_result($stmt);
     });
     </script>
 </body>
-</html> 
+</html>

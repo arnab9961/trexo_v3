@@ -20,6 +20,9 @@ body {
     line-height: 1.6;
     color: var(--dark);
     background-color: var(--light);
+    min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
 }
 
 /* Hero Section */
@@ -765,6 +768,7 @@ footer a:hover {
 /* Main Content Styles */
 main {
     padding-top: 1.5rem;
+    min-height: calc(100vh - 76px - 250px); /* Adjust 250px based on your footer height */
 }
 
 /* Table Styles */
@@ -988,4 +992,13 @@ span:not(.booking-status).status-completed {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+/* Add to existing styles */
+html {
+    height: 100%;
+}
+
+.container {
+    padding-bottom: 2rem;
 } 

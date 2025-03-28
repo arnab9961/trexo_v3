@@ -74,11 +74,20 @@ $bookings_growth = $bookings_data['total_count'] > 0 ?
 // Get recent bookings with more details
 $recent_bookings_query = "SELECT b.*, u.username, u.email,
                          d.name as destination_name, d.price as destination_price,
-                         p.name as package_name, p.price as package_price
+                         p.name as package_name, p.price as package_price,
+                         py.payment_method, py.transaction_id, py.sender_number, py.payment_date
                          FROM bookings b
                          JOIN users u ON b.user_id = u.id
                          LEFT JOIN destinations d ON b.destination_id = d.id
                          LEFT JOIN packages p ON b.package_id = p.id
+                         LEFT JOIN (
+                             SELECT * FROM payments 
+                             WHERE id IN (
+                                 SELECT MAX(id) 
+                                 FROM payments 
+                                 GROUP BY booking_id
+                             )
+                         ) py ON b.id = py.booking_id
                          ORDER BY b.booking_date DESC
                          LIMIT 5";
 $recent_bookings_result = mysqli_query($conn, $recent_bookings_query);
@@ -240,7 +249,7 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                                         <th>Travel Date</th>
                                         <th>Price</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
+                                        <th>Payment</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -271,19 +280,19 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                                             <td>
                                                 <form method="post" class="d-inline">
                                                     <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
-                                                    <select name="new_status" class="form-select form-select-sm status-select" onchange="this.form.submit()">
+                                                    <select name="new_status" class="form-select form-select-sm status-select mb-2" onchange="this.form.submit()">
                                                         <option value="pending" <?php echo $booking['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
                                                         <option value="confirmed" <?php echo $booking['status'] == 'confirmed' ? 'selected' : ''; ?>>Confirmed</option>
+                                                        <option value="completed" <?php echo $booking['status'] == 'completed' ? 'selected' : ''; ?>>Completed</option>
                                                         <option value="cancelled" <?php echo $booking['status'] == 'cancelled' ? 'selected' : ''; ?>>Cancelled</option>
                                                     </select>
                                                     <input type="hidden" name="update_booking_status" value="1">
                                                 </form>
                                             </td>
                                             <td>
-                                                <div class="btn-group">
-                                                    <a href="booking_details.php?id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-info">View</a>
-                                                    <a href="booking_edit.php?id=<?php echo $booking['id']; ?>" class="btn btn-sm btn-warning">Edit</a>
-                                                </div>
+                                                <span class="badge <?php echo $booking['payment_status'] == 'completed' ? 'bg-success' : 'bg-warning'; ?>">
+                                                    <?php echo ucfirst($booking['payment_status']); ?>
+                                                </span>
                                             </td>
                                         </tr>
                                     <?php
@@ -298,6 +307,50 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
                     </div>
                 </div>
 
+                <!-- Delete Booking Modal -->
+                <div class="modal fade" id="deleteBookingModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete Booking</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete the booking for <strong id="delete_name"></strong>?</p>
+                                <p class="text-danger">This action cannot be undone!</p>
+                            </div>
+                            <div class="modal-footer">
+                                <form method="POST" action="delete_booking.php">
+                                    <input type="hidden" name="booking_id" id="delete_id">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-danger">Delete Booking</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JavaScript for handling actions -->
+                <script>
+                // Handle Delete Booking Modal
+                document.querySelectorAll('.delete-booking').forEach(button => {
+                    button.addEventListener('click', function() {
+                        document.getElementById('delete_id').value = this.dataset.id;
+                        document.getElementById('delete_name').textContent = this.dataset.name;
+                    });
+                });
+
+                // Add confirmation for status changes
+                document.querySelectorAll('.status-select').forEach(select => {
+                    select.addEventListener('change', function() {
+                        if (!confirm('Are you sure you want to change the booking status?')) {
+                            this.selectedIndex = this.defaultSelected;
+                            return false;
+                        }
+                        this.form.submit();
+                    });
+                });
+                </script>
                 
             </main>
         </div>
@@ -307,16 +360,5 @@ $monthly_revenue = $revenue_data['monthly_revenue'] ?? 0;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="../js/script.js"></script>
-    <script>
-    // Add confirmation for status changes
-    document.querySelectorAll('.status-select').forEach(select => {
-        select.addEventListener('change', function() {
-            if (!confirm('Are you sure you want to change the booking status?')) {
-                this.selectedIndex = this.defaultSelected;
-                return false;
-            }
-        });
-    });
-    </script>
 </body>
 </html>

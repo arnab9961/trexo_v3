@@ -1,9 +1,5 @@
-<?php
-// Include database connection
-require_once 'includes/config.php';
-
-// Create payments table
-$sql = "CREATE TABLE IF NOT EXISTS `payments` (
+-- Create payments table
+CREATE TABLE IF NOT EXISTS `payments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `booking_id` int(11) NOT NULL,
   `payment_method` varchar(50) NOT NULL,
@@ -15,15 +11,4 @@ $sql = "CREATE TABLE IF NOT EXISTS `payments` (
   PRIMARY KEY (`id`),
   KEY `booking_id` (`booking_id`),
   CONSTRAINT `payments_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
-// Execute query
-if (mysqli_query($conn, $sql)) {
-    echo "Payments table created successfully";
-} else {
-    echo "Error creating payments table: " . mysqli_error($conn);
-}
-
-// Close connection
-mysqli_close($conn);
-?> 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; 

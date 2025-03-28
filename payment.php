@@ -81,23 +81,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     if (empty($errors)) {
-        // Insert payment record
-        $payment_query = "INSERT INTO payments (booking_id, payment_method, transaction_id, sender_number, amount) 
-                         VALUES (?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $payment_query);
-        mysqli_stmt_bind_param($stmt, "isssd", $booking_id, $payment_method, $transaction_id, $sender_number, $booking['total_price']);
+        // Start transaction
+        mysqli_begin_transaction($conn);
         
-        if (mysqli_stmt_execute($stmt)) {
+        try {
+            // Insert payment record
+            $payment_query = "INSERT INTO payments (booking_id, payment_method, transaction_id, sender_number, amount) 
+                             VALUES (?, ?, ?, ?, ?)";
+            $stmt = mysqli_prepare($conn, $payment_query);
+            mysqli_stmt_bind_param($stmt, "isssd", $booking_id, $payment_method, $transaction_id, $sender_number, $booking['total_price']);
+            
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception('Error inserting payment record: ' . mysqli_error($conn));
+            }
+            
             // Update booking payment status
             $update_query = "UPDATE bookings SET payment_status = 'pending' WHERE id = ?";
             $stmt = mysqli_prepare($conn, $update_query);
             mysqli_stmt_bind_param($stmt, "i", $booking_id);
-            mysqli_stmt_execute($stmt);
+            
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception('Error updating booking status: ' . mysqli_error($conn));
+            }
+            
+            // Commit transaction
+            mysqli_commit($conn);
             
             $_SESSION['success_message'] = 'Payment information submitted successfully. We will verify your payment and update the booking status.';
             redirect('my_bookings.php');
-        } else {
-            $errors[] = 'Error submitting payment information. Please try again.';
+            
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            mysqli_rollback($conn);
+            $errors[] = 'Error processing payment: ' . $e->getMessage();
         }
     }
 }
@@ -187,16 +203,7 @@ $page_title = "Payment - " . $booking['item_name'];
                             </div>
                         </div>
 
-                        <div class="alert alert-info mb-4">
-                            <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Payment Instructions:</h6>
-                            <ol class="mb-0">
-                                <li>Send the exact amount (৳<?php echo number_format($booking['total_price'], 2); ?>) to our payment number</li>
-                                <li>Use the reference: <strong>TREX<?php echo $booking_id; ?></strong></li>
-                                <li>Save the transaction ID from the confirmation message</li>
-                                <li>Enter the transaction ID and your sender number above</li>
-                                <li>We will verify your payment and update the booking status</li>
-                            </ol>
-                        </div>
+                        
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
