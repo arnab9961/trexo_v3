@@ -24,7 +24,7 @@ require_once 'includes/navbar.php';
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <h2 class="text-center text-md-start mb-4">Our Story</h2>
+                    <h2 class="text-center mb-8">Our Story</h2>
                     <p>TREXO was founded in 2025 with a simple mission: to make travel accessible, enjoyable, and memorable for everyone. What started as a small team of travel enthusiasts has grown into a comprehensive platform connecting travelers with amazing destinations worldwide.</p>
                     <p>We believe that travel is not just about visiting new places, but about creating meaningful experiences and connections. Our team works tirelessly to curate the best destinations and packages, ensuring that every journey with us is special.</p>
                 </div>

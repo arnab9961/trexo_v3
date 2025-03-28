@@ -116,62 +116,8 @@ $result = mysqli_stmt_get_result($stmt);
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
-                <div class="position-sticky pt-3">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="index.php">
-                                <i class="fas fa-tachometer-alt me-2"></i>
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active text-white" href="users.php">
-                                <i class="fas fa-users me-2"></i>
-                                Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="destinations.php">
-                                <i class="fas fa-map-marker-alt me-2"></i>
-                                Destinations
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="packages.php">
-                                <i class="fas fa-box me-2"></i>
-                                Packages
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="bookings.php">
-                                <i class="fas fa-calendar-check me-2"></i>
-                                Bookings
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="reviews.php">
-                                <i class="fas fa-star me-2"></i>
-                                Reviews
-                            </a>
-                        </li>
-                        <li class="nav-item mt-5">
-                            <a class="nav-link text-white" href="../index.php">
-                                <i class="fas fa-home me-2"></i>
-                                Back to Website
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white" href="../logout.php">
-                                <i class="fas fa-sign-out-alt me-2"></i>
-                                Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-
+            <?php require_once 'includes/sidebar.php'; ?>
+            
             <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">

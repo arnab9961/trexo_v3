@@ -1,7 +1,9 @@
 // Tourism Management System - JavaScript
+console.log('Tourism script loaded successfully!');
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded - initializing features');
     
     // Auto-hide alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert');
@@ -74,12 +76,135 @@ document.addEventListener('DOMContentLoaded', function() {
     // Image gallery lightbox (for destination details)
     const galleryImages = document.querySelectorAll('.gallery-image');
     if (galleryImages.length > 0) {
+        // Create lightbox elements if they don't exist
+        if (!document.getElementById('lightbox-container')) {
+            const lightboxContainer = document.createElement('div');
+            lightboxContainer.id = 'lightbox-container';
+            lightboxContainer.className = 'lightbox-container';
+            lightboxContainer.innerHTML = `
+                <div class="lightbox-content">
+                    <span class="lightbox-close">&times;</span>
+                    <img id="lightbox-image" class="lightbox-image">
+                    <div class="lightbox-caption"></div>
+                </div>
+            `;
+            document.body.appendChild(lightboxContainer);
+            
+            // Add CSS for lightbox
+            const style = document.createElement('style');
+            style.textContent = `
+                .lightbox-container {
+                    display: none;
+                    position: fixed;
+                    z-index: 9999;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.9);
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+                .lightbox-content {
+                    position: relative;
+                    margin: auto;
+                    padding: 0;
+                    width: 80%;
+                    max-width: 1200px;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                }
+                .lightbox-image {
+                    max-width: 90%;
+                    max-height: 80vh;
+                    object-fit: contain;
+                    border: 10px solid white;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+                    transform: scale(0.95);
+                    transition: transform 0.3s ease;
+                }
+                .lightbox-container.active .lightbox-image {
+                    transform: scale(1);
+                }
+                .lightbox-caption {
+                    color: white;
+                    margin-top: 10px;
+                    font-size: 16px;
+                }
+                .lightbox-close {
+                    position: absolute;
+                    top: 20px;
+                    right: 35px;
+                    color: #f1f1f1;
+                    font-size: 40px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    z-index: 10000;
+                    transition: 0.3s;
+                }
+                .lightbox-close:hover {
+                    color: #bbb;
+                    transform: scale(1.2);
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Add close functionality
+            const lightboxClose = document.querySelector('.lightbox-close');
+            const lightboxElement = document.getElementById('lightbox-container');
+            
+            lightboxClose.addEventListener('click', function() {
+                closeLightbox();
+            });
+            
+            // Close on clicking outside the image
+            lightboxElement.addEventListener('click', function(e) {
+                if (e.target === lightboxElement) {
+                    closeLightbox();
+                }
+            });
+            
+            // Close on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                }
+            });
+            
+            // Helper function to close lightbox
+            function closeLightbox() {
+                lightboxElement.style.opacity = '0';
+                lightboxElement.classList.remove('active');
+                setTimeout(function() {
+                    lightboxElement.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        // Set up click handlers for all gallery images
         galleryImages.forEach(function(image) {
-            image.addEventListener('click', function() {
-                const modal = new bootstrap.Modal(document.getElementById('image-modal'));
-                const modalImg = document.getElementById('modal-image');
-                modalImg.src = this.src;
-                modal.show();
+            image.addEventListener('click', function(e) {
+                e.preventDefault();
+                const imgSrc = this.href || this.getAttribute('href');
+                const imgAlt = this.querySelector('img').alt || '';
+                
+                console.log('Gallery image clicked:', imgSrc); // Debug
+                
+                const lightboxDisplay = document.getElementById('lightbox-container');
+                const lightboxImage = document.getElementById('lightbox-image');
+                const lightboxCaption = document.querySelector('.lightbox-caption');
+                
+                lightboxImage.src = imgSrc;
+                lightboxCaption.textContent = imgAlt;
+                
+                lightboxDisplay.style.display = 'block';
+                setTimeout(function() {
+                    lightboxDisplay.style.opacity = '1';
+                    lightboxDisplay.classList.add('active');
+                }, 10);
             });
         });
     }

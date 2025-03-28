@@ -32,6 +32,17 @@ if (!empty($destination['image'])) {
     $image_file = "destination" . (($destination_id % 6) + 1) . ".jpg";
 }
 
+// Get additional images for this destination
+$images_query = "SELECT * FROM destination_images WHERE destination_id = ?";
+$stmt = mysqli_prepare($conn, $images_query);
+mysqli_stmt_bind_param($stmt, "i", $destination_id);
+mysqli_stmt_execute($stmt);
+$images_result = mysqli_stmt_get_result($stmt);
+$additional_images = [];
+while ($img = mysqli_fetch_assoc($images_result)) {
+    $additional_images[] = $img;
+}
+
 // Get reviews for this destination
 $reviews_query = "SELECT r.*, u.username, u.full_name FROM reviews r 
                  JOIN users u ON r.user_id = u.id 
@@ -123,6 +134,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
     <div class="row mb-4">
         <div class="col-md-8">
             <img src="images/<?php echo $image_file; ?>" class="img-fluid rounded" alt="<?php echo $destination['name']; ?>">
+            
+            <!-- Image Gallery -->
+            <?php if (!empty($additional_images)): ?>
+            <div class="mt-3">
+                <h4>Image Gallery</h4>
+                <div class="row">
+                    <?php foreach ($additional_images as $img): ?>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="images/<?php echo $img['image_path']; ?>" class="gallery-image" onclick="return false;">
+                            <img src="images/<?php echo $img['image_path']; ?>" class="img-fluid rounded" alt="<?php echo $destination['name']; ?> Image">
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <div class="col-md-4">
             <div class="card">
@@ -245,6 +272,98 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_review'])) {
         <a href="destinations.php" class="btn btn-outline-primary">Back to Destinations</a>
     </div>
 </div>
+
+<!-- Direct script include for lightbox functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Destination details page loaded');
+    const galleryLinks = document.querySelectorAll('.gallery-image');
+    
+    // Debug gallery links
+    console.log('Found gallery links:', galleryLinks.length);
+    
+    galleryLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Gallery link clicked:', this.href);
+            
+            // Get parent container or create it
+            let lightbox = document.getElementById('lightbox-container');
+            
+            if (!lightbox) {
+                lightbox = document.createElement('div');
+                lightbox.id = 'lightbox-container';
+                lightbox.className = 'lightbox-container';
+                lightbox.innerHTML = `
+                    <div class="lightbox-content">
+                        <span class="lightbox-close">&times;</span>
+                        <img id="lightbox-image" class="lightbox-image">
+                    </div>
+                `;
+                document.body.appendChild(lightbox);
+                
+                // Add styles
+                const style = document.createElement('style');
+                style.textContent = `
+                    .lightbox-container {
+                        display: none;
+                        position: fixed;
+                        z-index: 9999;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(0, 0, 0, 0.9);
+                        transition: opacity 0.3s ease;
+                    }
+                    .lightbox-content {
+                        position: relative;
+                        margin: auto;
+                        padding: 0;
+                        width: 80%;
+                        max-width: 1200px;
+                        height: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .lightbox-image {
+                        max-width: 90%;
+                        max-height: 80vh;
+                        border: 10px solid white;
+                    }
+                    .lightbox-close {
+                        position: absolute;
+                        top: 20px;
+                        right: 35px;
+                        color: white;
+                        font-size: 40px;
+                        font-weight: bold;
+                        cursor: pointer;
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // Close functionality
+                document.querySelector('.lightbox-close').addEventListener('click', function() {
+                    lightbox.style.display = 'none';
+                });
+                
+                lightbox.addEventListener('click', function(e) {
+                    if (e.target === lightbox) {
+                        lightbox.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Set image and show lightbox
+            const img = document.getElementById('lightbox-image');
+            img.src = this.href;
+            lightbox.style.display = 'block';
+        });
+    });
+});
+</script>
 
 <?php
 require_once 'includes/footer.php';

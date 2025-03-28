@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = 'Password must be at least 6 characters long.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Please enter a valid email address.';
+    } elseif (!empty($phone) && (!preg_match('/^01[0-9]{9}$/', $phone))) {
+        $error = 'Phone number must be 11 digits starting with 01.';
     } else {
         // Check if username already exists
         $query = "SELECT * FROM users WHERE username = ?";
@@ -112,7 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="phone" class="form-label">Phone Number</label>
-                        <input type="text" class="form-control" id="phone" name="phone" value="<?php echo isset($phone) ? $phone : ''; ?>">
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               pattern="01[0-9]{9}" 
+                               title="Phone number must be 11 digits starting with 01"
+                               value="<?php echo isset($phone) ? $phone : ''; ?>">
+                        <small class="text-muted">Format: 01XXXXXXXXX (11 digits)</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="address" class="form-label">Address</label>
@@ -140,4 +146,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <?php
 require_once 'includes/footer.php';
-?> 
+?>

@@ -1,6 +1,22 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/navbar.php';
+
+// Add custom CSS for gallery badge
+echo '<style>
+.gallery-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    z-index: 1;
+}
+</style>';
+
 // Pagination setup
 $limit = 6; // Items per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -14,7 +30,8 @@ $total_packages = $total_row['total'];
 $total_pages = ceil($total_packages / $limit);
 
 // Get packages with pagination
-$packages_query = "SELECT * FROM packages ORDER BY name LIMIT $offset, $limit";
+$packages_query = "SELECT p.*, (SELECT COUNT(*) FROM package_images WHERE package_id = p.id) as image_count 
+                 FROM packages p ORDER BY name LIMIT $offset, $limit";
 $packages_result = mysqli_query($conn, $packages_query);
 ?>
 
@@ -49,6 +66,11 @@ $packages_result = mysqli_query($conn, $packages_query);
                             <div class="featured-badge">Featured</div>
                         <?php endif; ?>
                         <img src="images/<?php echo $image_file; ?>" class="card-img-top" alt="<?php echo $package['name']; ?>">
+                        <?php if ($package['image_count'] > 0): ?>
+                        <div class="gallery-badge">
+                            <i class="fas fa-images"></i> <?php echo $package['image_count']; ?>
+                        </div>
+                        <?php endif; ?>
                         <div class="card-body">
                             <h5 class="card-title"><?php echo $package['name']; ?></h5>
                             <p class="card-text"><?php echo substr($package['description'], 0, 100) . '...'; ?></p>

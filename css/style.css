@@ -940,4 +940,52 @@ span:not(.booking-status).status-completed {
     .team-img-container {
         height: 280px;
     }
+}
+
+/* Payment Methods Styles */
+.payment-methods .card {
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.payment-methods .card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.payment-methods .card-body {
+    background-color: #f8f9fa;
+}
+
+.payment-methods img {
+    object-fit: contain;
+}
+
+.payment-methods .alert-info {
+    background-color: #f8f9fa;
+    border-color: #e0e0e0;
+}
+
+.payment-methods .alert-info h6 {
+    color: #0d6efd;
+}
+
+.payment-methods ol {
+    padding-left: 1.2rem;
+}
+
+.payment-methods li {
+    margin-bottom: 0.5rem;
+}
+
+.payment-methods li:last-child {
+    margin-bottom: 0;
+}
+
+/* Make sure payment info is always visible */
+.alert-info,
+.payment-methods {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 } 

@@ -7,6 +7,19 @@ if (!is_logged_in() || !is_admin()) {
     redirect('../login.php');
 }
 
+// Initialize pagination variables
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$records_per_page = 10;
+$offset = ($page - 1) * $records_per_page;
+
+// Initialize search variable
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$search_condition = '';
+if (!empty($search)) {
+    $search = mysqli_real_escape_string($conn, $search);
+    $search_condition = " WHERE name LIKE '%$search%' OR location LIKE '%$search%' OR description LIKE '%$search%'";
+}
+
 // Handle destination actions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
@@ -17,18 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $name = sanitize_input($_POST['name']);
                 $description = sanitize_input($_POST['description']);
                 $location = sanitize_input($_POST['location']);
-                $price = sanitize_input($_POST['price']);
+                $price = (float)sanitize_input($_POST['price']);
                 $featured = isset($_POST['featured']) ? 1 : 0;
-
-                // Handle image upload
+                
+                // Handle main thumbnail image upload
                 $image = '';
                 if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                     $allowed = ['jpg', 'jpeg', 'png', 'gif'];
                     $filename = $_FILES['image']['name'];
-                    $filetype = pathinfo($filename, PATHINFO_EXTENSION);
+                    $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                     
-                    if (in_array(strtolower($filetype), $allowed)) {
-                        $new_filename = uniqid('destination_') . '.' . $filetype;
+                    if (in_array($file_ext, $allowed)) {
+                        $new_filename = uniqid('destination_') . '.' . $file_ext;
                         $upload_path = '../images/' . $new_filename;
                         
                         if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
@@ -36,13 +49,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     }
                 }
-
-                $query = "INSERT INTO destinations (name, description, location, image, price, featured) VALUES (?, ?, ?, ?, ?, ?)";
+                
+                $query = "INSERT INTO destinations (name, description, location, price, featured, image) 
+                         VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt = mysqli_prepare($conn, $query);
-                mysqli_stmt_bind_param($stmt, "ssssdi", $name, $description, $location, $image, $price, $featured);
+                mysqli_stmt_bind_param($stmt, "sssdis", $name, $description, $location, $price, $featured, $image);
                 
                 if (mysqli_stmt_execute($stmt)) {
-                    $_SESSION['success_message'] = "Destination added successfully.";
+                    $destination_id = mysqli_insert_id($conn);
+                    
+                    // Handle multiple images upload
+                    if (isset($_FILES['additional_images']) && is_array($_FILES['additional_images']['name'])) {
+                        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                        $image_query = "INSERT INTO destination_images (destination_id, image_path) VALUES (?, ?)";
+                        $image_stmt = mysqli_prepare($conn, $image_query);
+                        
+                        for ($i = 0; $i < count($_FILES['additional_images']['name']); $i++) {
+                            if ($_FILES['additional_images']['error'][$i] == 0) {
+                                $filename = $_FILES['additional_images']['name'][$i];
+                                $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                
+                                if (in_array($file_ext, $allowed)) {
+                                    $new_filename = uniqid('dest_img_') . '.' . $file_ext;
+                                    $upload_path = '../images/' . $new_filename;
+                                    
+                                    if (move_uploaded_file($_FILES['additional_images']['tmp_name'][$i], $upload_path)) {
+                                        mysqli_stmt_bind_param($image_stmt, "is", $destination_id, $new_filename);
+                                        mysqli_stmt_execute($image_stmt);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    $_SESSION['success_message'] = "Destination added successfully!";
                 } else {
                     $_SESSION['error_message'] = "Error adding destination: " . mysqli_error($conn);
                 }
@@ -53,21 +93,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $name = sanitize_input($_POST['name']);
                 $description = sanitize_input($_POST['description']);
                 $location = sanitize_input($_POST['location']);
-                $price = sanitize_input($_POST['price']);
+                $price = (float)sanitize_input($_POST['price']);
                 $featured = isset($_POST['featured']) ? 1 : 0;
-
-                // Handle image upload
+                
+                // Handle main image upload if provided
+                $image_update = '';
                 if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                     $allowed = ['jpg', 'jpeg', 'png', 'gif'];
                     $filename = $_FILES['image']['name'];
-                    $filetype = pathinfo($filename, PATHINFO_EXTENSION);
+                    $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                     
-                    if (in_array(strtolower($filetype), $allowed)) {
-                        $new_filename = uniqid('destination_') . '.' . $filetype;
+                    if (in_array($file_ext, $allowed)) {
+                        $new_filename = uniqid('destination_') . '.' . $file_ext;
                         $upload_path = '../images/' . $new_filename;
                         
                         if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
-                            // Delete old image
+                            // Delete old image if exists
                             $old_image_query = "SELECT image FROM destinations WHERE id = ?";
                             $old_image_stmt = mysqli_prepare($conn, $old_image_query);
                             mysqli_stmt_bind_param($old_image_stmt, "i", $id);
@@ -79,21 +120,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 unlink('../images/' . $old_image);
                             }
                             
-                            // Update with new image
-                            $query = "UPDATE destinations SET name = ?, description = ?, location = ?, image = ?, price = ?, featured = ? WHERE id = ?";
-                            $stmt = mysqli_prepare($conn, $query);
-                            mysqli_stmt_bind_param($stmt, "ssssdii", $name, $description, $location, $new_filename, $price, $featured, $id);
+                            $image_update = ", image = '$new_filename'";
                         }
                     }
-                } else {
-                    // Update without changing image
-                    $query = "UPDATE destinations SET name = ?, description = ?, location = ?, price = ?, featured = ? WHERE id = ?";
-                    $stmt = mysqli_prepare($conn, $query);
-                    mysqli_stmt_bind_param($stmt, "sssdii", $name, $description, $location, $price, $featured, $id);
                 }
                 
+                $query = "UPDATE destinations SET name = ?, description = ?, location = ?, price = ?, featured = ? $image_update WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "sssdii", $name, $description, $location, $price, $featured, $id);
+                
                 if (mysqli_stmt_execute($stmt)) {
-                    $_SESSION['success_message'] = "Destination updated successfully.";
+                    // Handle multiple images upload
+                    if (isset($_FILES['additional_images']) && is_array($_FILES['additional_images']['name'])) {
+                        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                        // Process each uploaded file
+                        $image_query = "INSERT INTO destination_images (destination_id, image_path) VALUES (?, ?)";
+                        $image_stmt = mysqli_prepare($conn, $image_query);
+                        
+                        for ($i = 0; $i < count($_FILES['additional_images']['name']); $i++) {
+                            if ($_FILES['additional_images']['error'][$i] == 0) {
+                                $filename = $_FILES['additional_images']['name'][$i];
+                                $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                
+                                if (in_array($file_ext, $allowed)) {
+                                    $new_filename = uniqid('dest_img_') . '.' . $file_ext;
+                                    $upload_path = '../images/' . $new_filename;
+                                    
+                                    if (move_uploaded_file($_FILES['additional_images']['tmp_name'][$i], $upload_path)) {
+                                        mysqli_stmt_bind_param($image_stmt, "is", $id, $new_filename);
+                                        mysqli_stmt_execute($image_stmt);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    $_SESSION['success_message'] = "Destination updated successfully!";
                 } else {
                     $_SESSION['error_message'] = "Error updating destination: " . mysqli_error($conn);
                 }
@@ -125,29 +187,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $_SESSION['error_message'] = "Error deleting destination: " . mysqli_error($conn);
                 }
                 break;
+
+            case 'delete_image':
+                $image_id = sanitize_input($_POST['image_id']);
+                
+                // Get the image filename before deleting
+                $query = "SELECT image_path FROM destination_images WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "i", $image_id);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                $image = mysqli_fetch_assoc($result);
+                
+                // Delete the image record
+                $query = "DELETE FROM destination_images WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "i", $image_id);
+                
+                if (mysqli_stmt_execute($stmt)) {
+                    // Delete the image file if it exists
+                    if ($image['image_path'] && file_exists('../images/' . $image['image_path'])) {
+                        unlink('../images/' . $image['image_path']);
+                    }
+                    
+                    $_SESSION['success_message'] = "Image deleted successfully.";
+                } else {
+                    $_SESSION['error_message'] = "Error deleting image: " . mysqli_error($conn);
+                }
+                break;
         }
         
         redirect('destinations.php');
     }
 }
 
-// Get destinations list with search and pagination
-$search = isset($_GET['search']) ? sanitize_input($_GET['search']) : '';
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$items_per_page = 10;
-$offset = ($page - 1) * $items_per_page;
-
-$where_clause = $search ? "WHERE name LIKE '%$search%' OR location LIKE '%$search%'" : "";
-$count_query = "SELECT COUNT(*) as total FROM destinations $where_clause";
+// Get all destinations with image count
+$count_query = "SELECT COUNT(*) as total FROM destinations" . $search_condition;
 $count_result = mysqli_query($conn, $count_query);
-$total_items = mysqli_fetch_assoc($count_result)['total'];
-$total_pages = ceil($total_items / $items_per_page);
+$total_records = mysqli_fetch_assoc($count_result)['total'];
+$total_pages = ceil($total_records / $records_per_page);
 
-$query = "SELECT * FROM destinations $where_clause ORDER BY created_at DESC LIMIT ? OFFSET ?";
-$stmt = mysqli_prepare($conn, $query);
-mysqli_stmt_bind_param($stmt, "ii", $items_per_page, $offset);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
+$query = "SELECT d.*, (SELECT COUNT(*) FROM destination_images WHERE destination_id = d.id) as image_count 
+          FROM destinations d" . $search_condition . " ORDER BY d.created_at DESC LIMIT $offset, $records_per_page";
+$result = mysqli_query($conn, $query);
+$destinations = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $destinations[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -198,6 +284,12 @@ $result = mysqli_stmt_get_result($stmt);
                             <a class="nav-link text-white" href="bookings.php">
                                 <i class="fas fa-calendar-check me-2"></i>
                                 Bookings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="inquiries.php">
+                                <i class="fas fa-calendar-check me-2"></i>
+                                Inquiries
                             </a>
                         </li>
                         
@@ -280,7 +372,7 @@ $result = mysqli_stmt_get_result($stmt);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while ($destination = mysqli_fetch_assoc($result)): ?>
+                                    <?php foreach ($destinations as $destination): ?>
                                     <tr>
                                         <td><?php echo $destination['id']; ?></td>
                                         <td>
@@ -336,7 +428,7 @@ $result = mysqli_stmt_get_result($stmt);
                                             </button>
                                         </td>
                                     </tr>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -401,6 +493,10 @@ $result = mysqli_stmt_get_result($stmt);
                         <div class="mb-3">
                             <label class="form-label">Image</label>
                             <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Images</label>
+                            <input type="file" class="form-control" name="additional_images[]" accept="image/*" multiple>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -490,9 +586,15 @@ $result = mysqli_stmt_get_result($stmt);
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Current Image</label>
-                            <img id="edit_current_image" src="" alt="" class="img-thumbnail d-block mb-2" style="max-height: 100px;">
+                            <div id="current_image"></div>
                             <input type="file" class="form-control" name="image" accept="image/*">
                             <small class="text-muted">Leave empty to keep current image</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Images</label>
+                            <div id="additional_images"></div>
+                            <input type="file" class="form-control mt-3" name="additional_images[]" accept="image/*" multiple>
+                            <small class="text-muted">You can select multiple new images to add to the gallery.</small>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -534,6 +636,31 @@ $result = mysqli_stmt_get_result($stmt);
         </div>
     </div>
 
+    <!-- Delete Image Modal -->
+    <div class="modal fade" id="deleteImageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this image?</p>
+                    <p class="text-danger">This action cannot be undone!</p>
+                    <div id="delete_image_preview" class="text-center"></div>
+                </div>
+                <div class="modal-footer">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="delete_image">
+                        <input type="hidden" name="image_id" id="delete_image_id">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete Image</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
@@ -565,15 +692,65 @@ $result = mysqli_stmt_get_result($stmt);
             document.getElementById('edit_description').value = this.dataset.description;
             document.getElementById('edit_location').value = this.dataset.location;
             document.getElementById('edit_price').value = this.dataset.price;
-            document.getElementById('edit_featured').checked = this.dataset.featured == '1';
+            document.getElementById('edit_featured').checked = this.dataset.featured === '1';
             
-            const currentImage = document.getElementById('edit_current_image');
+            // Show current image if exists
+            const currentImageDiv = document.getElementById('current_image');
             if (this.dataset.image) {
-                currentImage.src = '../images/' + this.dataset.image;
-                currentImage.style.display = 'block';
+                currentImageDiv.innerHTML = `
+                    <img src="../images/${this.dataset.image}" alt="Current Image" class="img-thumbnail" style="max-width: 200px;">
+                    <p class="mt-1">Current Main Image</p>
+                `;
             } else {
-                currentImage.style.display = 'none';
+                currentImageDiv.innerHTML = '<p>No current image</p>';
             }
+            
+            // Load additional images
+            const additionalImagesDiv = document.getElementById('additional_images');
+            additionalImagesDiv.innerHTML = '<p>Loading images...</p>';
+            
+            fetch(`get_destination_images.php?destination_id=${this.dataset.id}`)
+                .then(response => response.json())
+                .then(images => {
+                    if (images.length === 0) {
+                        additionalImagesDiv.innerHTML = '<p>No additional images</p>';
+                    } else {
+                        additionalImagesDiv.innerHTML = '';
+                        images.forEach(image => {
+                            const imageContainer = document.createElement('div');
+                            imageContainer.className = 'position-relative';
+                            imageContainer.innerHTML = `
+                                <div class="img-thumbnail" style="width: 150px; height: 120px;">
+                                    <img src="../images/${image.image_path}" alt="Destination Image" 
+                                         style="width: 100%; height: 85px; object-fit: cover;">
+                                    <div class="d-flex justify-content-center mt-1">
+                                        <button type="button" class="btn btn-sm btn-danger delete-additional-image"
+                                                data-bs-toggle="modal" data-bs-target="#deleteImageModal"
+                                                data-image-id="${image.id}" 
+                                                data-image-path="${image.image_path}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            additionalImagesDiv.appendChild(imageContainer);
+                        });
+                        
+                        // Add event listeners for delete buttons
+                        document.querySelectorAll('.delete-additional-image').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                document.getElementById('delete_image_id').value = this.dataset.imageId;
+                                document.getElementById('delete_image_preview').innerHTML = `
+                                    <img src="../images/${this.dataset.imagePath}" alt="Image Preview" class="img-thumbnail" style="max-width: 200px;">
+                                `;
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    additionalImagesDiv.innerHTML = '<p class="text-danger">Error loading images</p>';
+                    console.error('Error loading images:', error);
+                });
         });
     });
 
@@ -586,4 +763,4 @@ $result = mysqli_stmt_get_result($stmt);
     });
     </script>
 </body>
-</html> 
+</html>

@@ -82,6 +82,38 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (destination_id) REFERENCES destinations(id) ON DELETE SET NULL
 );
 
+CREATE TABLE `inquiries` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `subject` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `status` enum('new','in_progress','resolved') DEFAULT 'new',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Package Images Table (for multiple images per package)
+CREATE TABLE IF NOT EXISTS package_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    package_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (package_id) REFERENCES packages(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Destination Images Table (for multiple images per destination)
+CREATE TABLE IF NOT EXISTS destination_images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    destination_id INT NOT NULL,
+    image_path VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (destination_id) REFERENCES destinations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Add some sample images for packages
+
+-- Add some sample images for destinations
+
 
 -- Insert Admin User
 INSERT INTO users (username, password, email, full_name, user_type) 
@@ -109,4 +141,4 @@ INSERT INTO package_destinations (package_id, destination_id) VALUES
 (2, 2), (2, 3), (2, 4),
 (3, 1), (3, 2),
 (4, 3), (4, 4),
-(5, 1), (5, 2), (5, 5); 
+(5, 1), (5, 2), (5, 5);

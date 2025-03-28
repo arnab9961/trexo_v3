@@ -3,16 +3,13 @@ require_once '../includes/config.php';
 
 // Check if user is logged in and is admin
 if (!is_logged_in() || !is_admin()) {
-    $_SESSION['error_message'] = 'You do not have permission to access the admin area.';
     redirect('../login.php');
 }
 
-// Handle package actions
+// Process form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['action'])) {
-        $action = $_POST['action'];
-        
-        switch ($action) {
+        switch ($_POST['action']) {
             case 'add':
                 $name = sanitize_input($_POST['name']);
                 $description = sanitize_input($_POST['description']);
@@ -20,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $duration = sanitize_input($_POST['duration']);
                 $featured = isset($_POST['featured']) ? 1 : 0;
                 
-                // Handle image upload
+                // Handle main thumbnail image upload
                 $image = '';
                 if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                     $allowed = ['jpg', 'jpeg', 'png', 'gif'];
@@ -40,10 +37,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $query = "INSERT INTO packages (name, description, price, duration, featured, image) 
                          VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt = mysqli_prepare($conn, $query);
-                mysqli_stmt_bind_param($stmt, "ssdsss", $name, $description, $price, $duration, $featured, $image);
+                mysqli_stmt_bind_param($stmt, "ssdssi", $name, $description, $price, $duration, $featured, $image);
                 
                 if (mysqli_stmt_execute($stmt)) {
                     $package_id = mysqli_insert_id($conn);
+                    
+                    // Handle multiple images upload
+                    if (isset($_FILES['additional_images']) && is_array($_FILES['additional_images']['name'])) {
+                        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                        $image_query = "INSERT INTO package_images (package_id, image_path) VALUES (?, ?)";
+                        $image_stmt = mysqli_prepare($conn, $image_query);
+                        
+                        for ($i = 0; $i < count($_FILES['additional_images']['name']); $i++) {
+                            if ($_FILES['additional_images']['error'][$i] == 0) {
+                                $filename = $_FILES['additional_images']['name'][$i];
+                                $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                
+                                if (in_array($file_ext, $allowed)) {
+                                    $new_filename = uniqid('package_img_') . '.' . $file_ext;
+                                    $upload_path = '../images/' . $new_filename;
+                                    
+                                    if (move_uploaded_file($_FILES['additional_images']['tmp_name'][$i], $upload_path)) {
+                                        mysqli_stmt_bind_param($image_stmt, "is", $package_id, $new_filename);
+                                        mysqli_stmt_execute($image_stmt);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     
                     // Handle destinations if selected
                     if (isset($_POST['destinations']) && is_array($_POST['destinations'])) {
@@ -61,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $_SESSION['error_message'] = "Error adding package: " . mysqli_error($conn);
                 }
                 break;
-
+                
             case 'edit':
                 $id = sanitize_input($_POST['id']);
                 $name = sanitize_input($_POST['name']);
@@ -70,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $duration = sanitize_input($_POST['duration']);
                 $featured = isset($_POST['featured']) ? 1 : 0;
 
-                // Handle image upload
+                // Handle main image upload
                 $image_update = '';
                 if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
                     $allowed = ['jpg', 'jpeg', 'png', 'gif'];
@@ -104,6 +125,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 mysqli_stmt_bind_param($stmt, "ssdsii", $name, $description, $price, $duration, $featured, $id);
                 
                 if (mysqli_stmt_execute($stmt)) {
+                    // Handle multiple images upload
+                    if (isset($_FILES['additional_images']) && is_array($_FILES['additional_images']['name'])) {
+                        $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+                        // Process each uploaded file
+                        $image_query = "INSERT INTO package_images (package_id, image_path) VALUES (?, ?)";
+                        $image_stmt = mysqli_prepare($conn, $image_query);
+                        
+                        for ($i = 0; $i < count($_FILES['additional_images']['name']); $i++) {
+                            if ($_FILES['additional_images']['error'][$i] == 0) {
+                                $filename = $_FILES['additional_images']['name'][$i];
+                                $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                                
+                                if (in_array($file_ext, $allowed)) {
+                                    $new_filename = uniqid('package_img_') . '.' . $file_ext;
+                                    $upload_path = '../images/' . $new_filename;
+                                    
+                                    if (move_uploaded_file($_FILES['additional_images']['tmp_name'][$i], $upload_path)) {
+                                        mysqli_stmt_bind_param($image_stmt, "is", $id, $new_filename);
+                                        mysqli_stmt_execute($image_stmt);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // Update package destinations
                     // First, remove all existing destinations
                     $delete_dest_query = "DELETE FROM package_destinations WHERE package_id = ?";
@@ -127,71 +173,114 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $_SESSION['error_message'] = "Error updating package: " . mysqli_error($conn);
                 }
                 break;
-
+                
             case 'delete':
                 $id = sanitize_input($_POST['id']);
                 
-                // Get image filename before deleting package
-                $image_query = "SELECT image FROM packages WHERE id = ?";
-                $image_stmt = mysqli_prepare($conn, $image_query);
-                mysqli_stmt_bind_param($image_stmt, "i", $id);
-                mysqli_stmt_execute($image_stmt);
-                $image_result = mysqli_stmt_get_result($image_stmt);
-                $image = mysqli_fetch_assoc($image_result)['image'];
+                // Get the image filename before deleting
+                $query = "SELECT image FROM packages WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "i", $id);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                $package = mysqli_fetch_assoc($result);
                 
+                // Get additional images
+                $images_query = "SELECT image_path FROM package_images WHERE package_id = ?";
+                $images_stmt = mysqli_prepare($conn, $images_query);
+                mysqli_stmt_bind_param($images_stmt, "i", $id);
+                mysqli_stmt_execute($images_stmt);
+                $images_result = mysqli_stmt_get_result($images_stmt);
+                $additional_images = [];
+                while ($image_row = mysqli_fetch_assoc($images_result)) {
+                    $additional_images[] = $image_row['image_path'];
+                }
+                
+                // Delete the package
                 $query = "DELETE FROM packages WHERE id = ?";
                 $stmt = mysqli_prepare($conn, $query);
                 mysqli_stmt_bind_param($stmt, "i", $id);
                 
                 if (mysqli_stmt_execute($stmt)) {
-                    // Delete package image if exists
-                    if ($image && file_exists('../images/' . $image)) {
-                        unlink('../images/' . $image);
+                    // Delete the main image file if it exists
+                    if ($package['image'] && file_exists('../images/' . $package['image'])) {
+                        unlink('../images/' . $package['image']);
                     }
+                    
+                    // Delete all additional image files
+                    foreach ($additional_images as $img_path) {
+                        if (file_exists('../images/' . $img_path)) {
+                            unlink('../images/' . $img_path);
+                        }
+                    }
+                    
                     $_SESSION['success_message'] = "Package deleted successfully.";
                 } else {
                     $_SESSION['error_message'] = "Error deleting package: " . mysqli_error($conn);
                 }
                 break;
+                
+            case 'delete_image':
+                $image_id = sanitize_input($_POST['image_id']);
+                
+                // Get the image filename before deleting
+                $query = "SELECT image_path FROM package_images WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "i", $image_id);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
+                $image = mysqli_fetch_assoc($result);
+                
+                // Delete the image record
+                $query = "DELETE FROM package_images WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
+                mysqli_stmt_bind_param($stmt, "i", $image_id);
+                
+                if (mysqli_stmt_execute($stmt)) {
+                    // Delete the image file if it exists
+                    if ($image['image_path'] && file_exists('../images/' . $image['image_path'])) {
+                        unlink('../images/' . $image['image_path']);
+                    }
+                    
+                    $_SESSION['success_message'] = "Image deleted successfully.";
+                } else {
+                    $_SESSION['error_message'] = "Error deleting image: " . mysqli_error($conn);
+                }
+                break;
         }
         
+        // Redirect to refresh the page
         redirect('packages.php');
     }
 }
 
-// Get packages list with search and pagination
-$search = isset($_GET['search']) ? sanitize_input($_GET['search']) : '';
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$items_per_page = 10;
-$offset = ($page - 1) * $items_per_page;
-
-$where_clause = $search ? "WHERE name LIKE '%$search%' OR description LIKE '%$search%'" : "";
-$count_query = "SELECT COUNT(*) as total FROM packages $where_clause";
-$count_result = mysqli_query($conn, $count_query);
-$total_items = mysqli_fetch_assoc($count_result)['total'];
-$total_pages = ceil($total_items / $items_per_page);
-
-$query = "SELECT * FROM packages $where_clause ORDER BY created_at DESC LIMIT ? OFFSET ?";
-$stmt = mysqli_prepare($conn, $query);
-mysqli_stmt_bind_param($stmt, "ii", $items_per_page, $offset);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-
-// Get all destinations for the forms
-$destinations_query = "SELECT * FROM destinations ORDER BY name";
-$destinations_result = mysqli_query($conn, $destinations_query);
+// Get all destinations for dropdown
+$query = "SELECT * FROM destinations ORDER BY name";
+$result = mysqli_query($conn, $query);
 $destinations = [];
-while ($destination = mysqli_fetch_assoc($destinations_result)) {
-    $destinations[] = $destination;
+while ($row = mysqli_fetch_assoc($result)) {
+    $destinations[] = $row;
 }
-?>
 
+// Get all packages with image count
+$query = "SELECT p.*, (SELECT COUNT(*) FROM package_images WHERE package_id = p.id) as image_count 
+          FROM packages p ORDER BY p.created_at DESC";
+$result = mysqli_query($conn, $query);
+$packages = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $packages[] = $row;
+}
+
+// Page Title
+$page_title = "Manage Packages";
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Package Management - Tourism Management System</title>
+    <title>Manage Packages - Tourism Management System</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -207,46 +296,37 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
 
             <!-- Main Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">Package Management</h1>
-                    <div class="btn-toolbar mb-2 mb-md-0">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackageModal">
-                            <i class="fas fa-plus me-2"></i>Add New Package
-                        </button>
+                <h1 class="h2 mb-3">Manage Packages</h1>
+                
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <?php 
+                        echo $_SESSION['success_message']; 
+                        unset($_SESSION['success_message']);
+                        ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                </div>
-
-                <?php
-                if (isset($_SESSION['success_message'])) {
-                    echo display_success($_SESSION['success_message']);
-                    unset($_SESSION['success_message']);
-                }
-                if (isset($_SESSION['error_message'])) {
-                    echo display_error($_SESSION['error_message']);
-                    unset($_SESSION['error_message']);
-                }
-                ?>
-
-                <!-- Search Form -->
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <form method="GET" class="row g-3">
-                            <div class="col-md-8">
-                                <input type="text" class="form-control" name="search" placeholder="Search packages..." value="<?php echo htmlspecialchars($search); ?>">
-                            </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-primary">Search</button>
-                                <?php if ($search): ?>
-                                    <a href="packages.php" class="btn btn-secondary">Clear</a>
-                                <?php endif; ?>
-                            </div>
-                        </form>
+                <?php endif; ?>
+                
+                <?php if (isset($_SESSION['error_message'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <?php 
+                        echo $_SESSION['error_message']; 
+                        unset($_SESSION['error_message']);
+                        ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                </div>
-
-                <!-- Packages Table -->
+                <?php endif; ?>
+                
                 <div class="card">
                     <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">All Packages</h5>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackageModal">
+                                <i class="fas fa-plus"></i> Add New Package
+                            </button>
+                        </div>
+                        
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
                                 <thead>
@@ -254,35 +334,41 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                                         <th>ID</th>
                                         <th>Image</th>
                                         <th>Name</th>
-                                        <th>Duration</th>
                                         <th>Price</th>
+                                        <th>Duration</th>
+                                        <th>Images</th>
                                         <th>Featured</th>
-                                        <th>Created At</th>
+                                        <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while ($package = mysqli_fetch_assoc($result)): ?>
+                                    <?php foreach ($packages as $package): ?>
                                     <tr>
                                         <td><?php echo $package['id']; ?></td>
                                         <td>
                                             <?php if ($package['image']): ?>
-                                                <img src="../images/<?php echo $package['image']; ?>" alt="<?php echo htmlspecialchars($package['name']); ?>" class="img-thumbnail" style="max-width: 50px;">
+                                                <img src="../images/<?php echo $package['image']; ?>" 
+                                                     alt="<?php echo $package['name']; ?>" 
+                                                     class="img-thumbnail" style="width: 80px; height: 60px; object-fit: cover;">
                                             <?php else: ?>
-                                                <img src="../images/placeholder.jpg" alt="No Image" class="img-thumbnail" style="max-width: 50px;">
+                                                <span class="text-muted">No image</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?php echo htmlspecialchars($package['name']); ?></td>
-                                        <td><?php echo htmlspecialchars($package['duration']); ?></td>
-                                        <td><?php echo number_format($package['price'], 2); ?></td>
+                                        <td><?php echo $package['name']; ?></td>
+                                        <td>$<?php echo number_format($package['price'], 2); ?></td>
+                                        <td><?php echo $package['duration']; ?></td>
+                                        <td><span class="badge bg-info"><?php echo $package['image_count']; ?></span></td>
                                         <td>
-                                            <span class="badge <?php echo $package['featured'] ? 'bg-success' : 'bg-secondary'; ?>">
-                                                <?php echo $package['featured'] ? 'Yes' : 'No'; ?>
-                                            </span>
+                                            <?php if ($package['featured']): ?>
+                                                <span class="badge bg-success">Yes</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary">No</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td><?php echo date('M d, Y', strtotime($package['created_at'])); ?></td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-warning edit-package" 
+                                            <button class="btn btn-sm btn-primary edit-package" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#editPackageModal"
                                                     data-id="<?php echo $package['id']; ?>"
@@ -294,8 +380,8 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                                                     data-image="<?php echo $package['image']; ?>">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger delete-package"
-                                                    data-bs-toggle="modal"
+                                            <button class="btn btn-sm btn-danger delete-package" 
+                                                    data-bs-toggle="modal" 
                                                     data-bs-target="#deletePackageModal"
                                                     data-id="<?php echo $package['id']; ?>"
                                                     data-name="<?php echo htmlspecialchars($package['name']); ?>">
@@ -303,35 +389,16 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                                             </button>
                                         </td>
                                     </tr>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
+                                    
+                                    <?php if (empty($packages)): ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center">No packages found</td>
+                                    </tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
-
-                        <!-- Pagination -->
-                        <?php if ($total_pages > 1): ?>
-                        <nav aria-label="Page navigation" class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                <?php if ($page > 1): ?>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<?php echo ($page - 1); ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Previous</a>
-                                </li>
-                                <?php endif; ?>
-                                
-                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                    <a class="page-link" href="?page=<?php echo $i; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>"><?php echo $i; ?></a>
-                                </li>
-                                <?php endfor; ?>
-                                
-                                <?php if ($page < $total_pages): ?>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=<?php echo ($page + 1); ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?>">Next</a>
-                                </li>
-                                <?php endif; ?>
-                            </ul>
-                        </nav>
-                        <?php endif; ?>
                     </div>
                 </div>
             </main>
@@ -363,12 +430,17 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Duration</label>
-                            <input type="text" class="form-control" name="duration" placeholder="e.g., 3 days" required>
+                            <input type="text" class="form-control" name="duration" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Package Image</label>
+                            <label class="form-label">Main Thumbnail Image</label>
                             <input type="file" class="form-control" name="image" accept="image/*">
-                            <small class="text-muted">Recommended size: 800x600 pixels</small>
+                            <small class="text-muted">This will be the main image displayed in listings. Recommended size: 800x600 pixels</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Images</label>
+                            <input type="file" class="form-control" name="additional_images[]" accept="image/*" multiple>
+                            <small class="text-muted">You can select multiple images. These will be displayed in the package details gallery.</small>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -381,7 +453,7 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                             <select class="form-select" name="destinations[]" multiple size="5">
                                 <?php foreach ($destinations as $destination): ?>
                                 <option value="<?php echo $destination['id']; ?>">
-                                    <?php echo htmlspecialchars($destination['name']); ?> - <?php echo htmlspecialchars($destination['location']); ?>
+                                    <?php echo $destination['name']; ?> ($<?php echo $destination['price']; ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -426,10 +498,16 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                             <input type="text" class="form-control" name="duration" id="edit_duration" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Package Image</label>
+                            <label class="form-label">Main Thumbnail Image</label>
                             <div id="current_image" class="mb-2"></div>
                             <input type="file" class="form-control" name="image" accept="image/*">
-                            <small class="text-muted">Leave empty to keep current image. Recommended size: 800x600 pixels</small>
+                            <small class="text-muted">Leave empty to keep current main image. Recommended size: 800x600 pixels</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Images</label>
+                            <div id="additional_images" class="d-flex flex-wrap gap-2 mb-2"></div>
+                            <input type="file" class="form-control" name="additional_images[]" accept="image/*" multiple>
+                            <small class="text-muted">You can select multiple new images to add to the gallery.</small>
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -442,7 +520,7 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
                             <select class="form-select" name="destinations[]" id="edit_destinations" multiple size="5">
                                 <?php foreach ($destinations as $destination): ?>
                                 <option value="<?php echo $destination['id']; ?>">
-                                    <?php echo htmlspecialchars($destination['name']); ?> - <?php echo htmlspecialchars($destination['location']); ?>
+                                    <?php echo $destination['name']; ?> ($<?php echo $destination['price']; ?>)
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -482,6 +560,31 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
         </div>
     </div>
 
+    <!-- Delete Image Modal -->
+    <div class="modal fade" id="deleteImageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this image?</p>
+                    <p class="text-danger">This action cannot be undone!</p>
+                    <div id="delete_image_preview" class="text-center"></div>
+                </div>
+                <div class="modal-footer">
+                    <form method="POST">
+                        <input type="hidden" name="action" value="delete_image">
+                        <input type="hidden" name="image_id" id="delete_image_id">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Delete Image</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
@@ -501,11 +604,58 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
             if (this.dataset.image) {
                 currentImageDiv.innerHTML = `
                     <img src="../images/${this.dataset.image}" alt="Current Image" class="img-thumbnail" style="max-width: 200px;">
-                    <p class="mt-1">Current Image</p>
+                    <p class="mt-1">Current Main Image</p>
                 `;
             } else {
                 currentImageDiv.innerHTML = '<p>No current image</p>';
             }
+            
+            // Load additional images
+            const additionalImagesDiv = document.getElementById('additional_images');
+            additionalImagesDiv.innerHTML = '<p>Loading images...</p>';
+            
+            fetch(`get_package_images.php?package_id=${this.dataset.id}`)
+                .then(response => response.json())
+                .then(images => {
+                    if (images.length === 0) {
+                        additionalImagesDiv.innerHTML = '<p>No additional images</p>';
+                    } else {
+                        additionalImagesDiv.innerHTML = '';
+                        images.forEach(image => {
+                            const imageContainer = document.createElement('div');
+                            imageContainer.className = 'position-relative';
+                            imageContainer.innerHTML = `
+                                <div class="img-thumbnail" style="width: 150px; height: 120px;">
+                                    <img src="../images/${image.image_path}" alt="Package Image" 
+                                         style="width: 100%; height: 85px; object-fit: cover;">
+                                    <div class="d-flex justify-content-center mt-1">
+                                        <button type="button" class="btn btn-sm btn-danger delete-additional-image"
+                                                data-bs-toggle="modal" data-bs-target="#deleteImageModal"
+                                                data-image-id="${image.id}" 
+                                                data-image-path="${image.image_path}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            additionalImagesDiv.appendChild(imageContainer);
+                        });
+                        
+                        // Add event listeners for delete buttons
+                        document.querySelectorAll('.delete-additional-image').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                document.getElementById('delete_image_id').value = this.dataset.imageId;
+                                document.getElementById('delete_image_preview').innerHTML = `
+                                    <img src="../images/${this.dataset.imagePath}" alt="Image Preview" class="img-thumbnail" style="max-width: 200px;">
+                                `;
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    additionalImagesDiv.innerHTML = '<p class="text-danger">Error loading images</p>';
+                    console.error('Error loading images:', error);
+                });
             
             // Load package destinations
             fetch(`get_package_destinations.php?package_id=${this.dataset.id}`)
@@ -528,4 +678,4 @@ while ($destination = mysqli_fetch_assoc($destinations_result)) {
     });
     </script>
 </body>
-</html> 
+</html>

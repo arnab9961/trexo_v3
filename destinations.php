@@ -1,6 +1,22 @@
 <?php
 require_once 'includes/header.php';
 require_once 'includes/navbar.php';
+
+// Add custom CSS for gallery badge
+echo '<style>
+.gallery-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    z-index: 1;
+}
+</style>';
+
 // Pagination setup
 $limit = 6; // Items per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -14,7 +30,8 @@ $total_destinations = $total_row['total'];
 $total_pages = ceil($total_destinations / $limit);
 
 // Get destinations with pagination
-$destinations_query = "SELECT * FROM destinations ORDER BY name LIMIT $offset, $limit";
+$destinations_query = "SELECT d.*, (SELECT COUNT(*) FROM destination_images WHERE destination_id = d.id) as image_count 
+                      FROM destinations d ORDER BY name LIMIT $offset, $limit";
 $destinations_result = mysqli_query($conn, $destinations_query);
 ?>
 
@@ -49,6 +66,11 @@ $destinations_result = mysqli_query($conn, $destinations_query);
                             <div class="featured-badge">Featured</div>
                         <?php endif; ?>
                         <img src="images/<?php echo $image_file; ?>" class="card-img-top" alt="<?php echo $destination['name']; ?>">
+                        <?php if ($destination['image_count'] > 0): ?>
+                        <div class="gallery-badge">
+                            <i class="fas fa-images"></i> <?php echo $destination['image_count']; ?>
+                        </div>
+                        <?php endif; ?>
                         <div class="card-body">
                             <h5 class="card-title"><?php echo $destination['name']; ?></h5>
                             <p class="card-text"><?php echo substr($destination['description'], 0, 100) . '...'; ?></p>

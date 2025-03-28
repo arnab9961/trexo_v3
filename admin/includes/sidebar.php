@@ -31,7 +31,12 @@
                     Bookings
                 </a>
             </li>
-           
+            <li class="nav-item">
+                <a class="nav-link text-white <?php echo basename($_SERVER['PHP_SELF']) == 'inquiries.php' ? 'active' : ''; ?>" href="inquiries.php">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Inquiries
+                </a>
+            </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php echo basename($_SERVER['PHP_SELF']) == 'reviews.php' ? 'active' : ''; ?>" href="reviews.php">
                     <i class="fas fa-star me-2"></i>

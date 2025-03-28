@@ -135,7 +135,7 @@ $featured_packages_result = mysqli_query($conn, $featured_packages_query);
                 <div class="col-md-4 mb-4">
                     <div class="card team-card h-100 border shadow">
                         <div class="team-img-container">
-                            <img src="images/COO.jpeg.jpg" class="card-img-top team-img" alt="Enamul Haque Nabin - COO">
+                            <img src="images/COO.jpg" class="card-img-top team-img" alt="Enamul Haque Nabin - COO">
                         </div>
                         <div class="card-body text-center py-4">
                             <h4 class="card-title">Enamul Haque Nabin</h4>

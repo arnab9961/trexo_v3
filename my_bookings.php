@@ -61,6 +61,18 @@ $bookings_result = mysqli_stmt_get_result($stmt);
 
 <div class="container py-5">
     
+<div class="info-box p-3 mb-4 border rounded bg-light">
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <i class="fas fa-credit-card fa-2x"></i>
+        </div>
+        <div>
+            <h5 class="mb-1">Payment Information</h5>
+            <p class="mb-0">Learn about our payment methods and how to pay for your bookings. <a href="payment_info.php" class="text-primary fw-semibold">View payment information</a></p>
+        </div>
+    </div>
+</div>
+
     
     <?php if (mysqli_num_rows($bookings_result) > 0): ?>
         <div class="row">
@@ -121,6 +133,65 @@ $bookings_result = mysqli_stmt_get_result($stmt);
                             
                             <div class="booking-actions mt-auto">
                                 <?php if ($booking['status'] == 'pending'): ?>
+                                    <?php if ($booking['payment_status'] != 'completed'): ?>
+                                        <div class="payment-methods mb-3">
+                                            <h6 class="mb-2">Payment Methods:</h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="card mb-2">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="me-2" style="width: 40px; height: 40px; background-color: #e31888; border-radius: 5px; display: flex; justify-content: center; align-items: center;">
+                                                                    <span style="color: white; font-weight: bold; font-size: 14px;">bKash</span>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">bKash</h6>
+                                                                    <small class="text-muted">Send Money</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <p class="mb-1"><strong>Number:</strong> 01XXXXXXXXX</p>
+                                                                <p class="mb-1"><strong>Amount:</strong> ৳<?php echo number_format($booking['total_price'], 2); ?></p>
+                                                                <p class="mb-0"><strong>Reference:</strong> TREX<?php echo $booking['id']; ?></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card mb-2">
+                                                        <div class="card-body p-2">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="me-2" style="width: 40px; height: 40px; background-color: #f45e37; border-radius: 5px; display: flex; justify-content: center; align-items: center;">
+                                                                    <span style="color: white; font-weight: bold; font-size: 14px;">Nagad</span>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">Nagad</h6>
+                                                                    <small class="text-muted">Send Money</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <p class="mb-1"><strong>Number:</strong> 01XXXXXXXXX</p>
+                                                                <p class="mb-1"><strong>Amount:</strong> ৳<?php echo number_format($booking['total_price'], 2); ?></p>
+                                                                <p class="mb-0"><strong>Reference:</strong> TREX<?php echo $booking['id']; ?></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-info mt-2">
+                                                <h6 class="mb-2">Payment Instructions:</h6>
+                                                <ol class="mb-0">
+                                                    <li>Send the exact amount to either bKash or Nagad number</li>
+                                                    <li>Use the reference number (TREX<?php echo $booking['id']; ?>) in the payment note</li>
+                                                    <li>After sending money, click "Pay Now" and enter your transaction details</li>
+                                                    <li>We will verify your payment and update the booking status</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                        <a href="payment.php?booking_id=<?php echo $booking['id']; ?>" class="btn btn-success mb-2">
+                                            <i class="fas fa-money-bill-wave me-1"></i> Pay Now
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="my_bookings.php?cancel=<?php echo $booking['id']; ?>" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">
                                         <i class="fas fa-times-circle me-1"></i> Cancel
                                     </a>
